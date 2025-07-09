@@ -1,0 +1,10 @@
+# Search in a Sorted Array of Unknown Size
+# Concept: Arrays & Hashing
+
+class Solution:
+    def solve(self):
+        pass
+
+if __name__ == "__main__":
+    solution = Solution()
+    # Test cases here

@@ -1,0 +1,13 @@
+# Maximum Size Subarray Sum Equals k
+
+- Concept: 1-D Dynamic Programming
+- LeetCode Link: https://leetcode.com/problems/maximum-size-subarray-sum-equals-k/
+
+---
+
+## Problem Description
+
+## Solution
+
+## Time/Space Complexity
+

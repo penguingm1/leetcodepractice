@@ -1,0 +1,10 @@
+# Logical OR of Two Binary Grids Represented as Quad-Trees
+# Concept: Two Pointers
+
+class Solution:
+    def solve(self):
+        pass
+
+if __name__ == "__main__":
+    solution = Solution()
+    # Test cases here

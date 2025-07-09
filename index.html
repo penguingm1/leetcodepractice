@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coding Practice Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="menu-header">
+                Menu
+                <span class="dropdown-arrow">▼</span>
+            </div>
+            
+            <div class="menu-item">
+                <div class="icon"></div>
+                Practice Problems
+            </div>
+            
+            <div class="stats-section">
+                <div class="stats-title">Stats</div>
+                <div class="stat-item">
+                    <span class="stat-label easy">Easy</span>
+                    <span class="stat-value"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label medium">Medium</span>
+                    <span class="stat-value"></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label hard">Hard</span>
+                    <span class="stat-value"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- <div class="header">
+                <h1>Courses</h1>
+                
+                <div class="course-cards">
+                    <div class="course-card purple">
+                        Algorithms & Data<br>
+                        Structures for Beginners
+                    </div>
+                    <div class="course-card red">
+                        Advanced Algorithms
+                    </div>
+                    <div class="course-card blue">
+                        System Design for Beginners
+                    </div>
+                </div>
+                
+                <div class="filter-tabs">
+                    <div class="filter-tab">🎯 Core Skills</div>
+                    <div class="filter-tab active">💻 NeetCode 150</div>
+                    <div class="filter-tab">🎨 System Design</div>
+                </div>
+            </div> -->
+
+            <div class="progress-info">
+                <div class="progress-text">0 / 150</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <input type="text" class="search-input" placeholder="Search">
+                <button class="search-btn">🔍</button>
+                <!-- <div class="action-buttons">
+                    <button class="action-btn">📋</button>
+                    <button class="action-btn">🔀</button>
+                    <button class="action-btn">📊</button>
+                    <button class="action-btn">❓</button>
+                </div> -->
+            </div>
+
+            <div class="problem-list">
+                <div class="problem-item" onclick="showConceptView('Arrays & Hashing')">
+                    <div class="problem-title">Arrays & Hashing</div>
+                    <div class="problem-progress">
+                        <span>0 / 25</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Two Pointers')">
+                    <div class="problem-title">Two Pointers</div>
+                    <div class="problem-progress">
+                        <span>0 / 15</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Sliding Window')">
+                    <div class="problem-title">Sliding Window</div>
+                    <div class="problem-progress">
+                        <span>0 / 12</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Stack')">
+                    <div class="problem-title">Stack</div>
+                    <div class="problem-progress">
+                        <span>0 / 8</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Binary Search')">
+                    <div class="problem-title">Binary Search</div>
+                    <div class="problem-progress">
+                        <span>0 / 12</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Linked List')">
+                    <div class="problem-title">Linked List</div>
+                    <div class="problem-progress">
+                        <span>0 / 10</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Trees')">
+                    <div class="problem-title">Trees</div>
+                    <div class="problem-progress">
+                        <span>0 / 15</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Heap / Priority Queue')">
+                    <div class="problem-title">Heap / Priority Queue</div>
+                    <div class="problem-progress">
+                        <span>0 / 5</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Backtracking')">
+                    <div class="problem-title">Backtracking</div>
+                    <div class="problem-progress">
+                        <span>0 / 8</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Tries')">
+                    <div class="problem-title">Tries</div>
+                    <div class="problem-progress">
+                        <span>0 / 2</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Graphs')">
+                    <div class="problem-title">Graphs</div>
+                    <div class="problem-progress">
+                        <span>0 / 8</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Advanced Graphs')">
+                    <div class="problem-title">Advanced Graphs</div>
+                    <div class="problem-progress">
+                        <span>0 / 3</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('1-D Dynamic Programming')">
+                    <div class="problem-title">1-D Dynamic Programming</div>
+                    <div class="problem-progress">
+                        <span>0 / 12</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('2-D Dynamic Programming')">
+                    <div class="problem-title">2-D Dynamic Programming</div>
+                    <div class="problem-progress">
+                        <span>0 / 8</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Greedy')">
+                    <div class="problem-title">Greedy</div>
+                    <div class="problem-progress">
+                        <span>0 / 5</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Intervals')">
+                    <div class="problem-title">Intervals</div>
+                    <div class="problem-progress">
+                        <span>0 / 5</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Math & Geometry')">
+                    <div class="problem-title">Math & Geometry</div>
+                    <div class="problem-progress">
+                        <span>0 / 8</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Bit Manipulation')">
+                    <div class="problem-title">Bit Manipulation</div>
+                    <div class="problem-progress">
+                        <span>0 / 5</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="problem-item" onclick="showConceptView('Misc')">
+                    <div class="problem-title">Misc</div>
+                    <div class="problem-progress">
+                        <span>0 / 12</span>
+                        <div class="problem-bar">
+                            <div class="problem-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Concept View -->
+        <div class="concept-view" id="conceptView">
+            <div class="concept-header">
+                <div class="concept-title" id="conceptTitle">Concept Name</div>
+                <div class="concept-stats">
+                    <div class="concept-stat">
+                        <span class="easy">●</span>
+                        <span id="easyCount">0</span> Easy
+                    </div>
+                    <div class="concept-stat">
+                        <span class="medium">●</span>
+                        <span id="mediumCount">0</span> Medium
+                    </div>
+                    <div class="concept-stat">
+                        <span class="hard">●</span>
+                        <span id="hardCount">0</span> Hard
+                    </div>
+                </div>
+                <button class="back-btn" onclick="closeConceptView()">← Back to Concepts</button>
+            </div>
+            <div class="concept-content">
+                <div style="text-align: center; margin-bottom: 20px; color: #a0aec0; font-size: 14px;">
+                    Click on any problem to open it in LeetCode
+                </div>
+                <div class="problem-list" id="conceptProblemList">
+                    <!-- Problems will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem Detail View -->
+    <div class="problem-detail-view" id="problemDetailView">
+        <div class="detail-header">
+            <button class="back-btn" onclick="closeProblemDetail()">← Back to Concepts</button>
+            <h2 id="detailConceptTitle">Concept Name</h2>
+            <div class="progress-bar-detail">
+                <div class="progress-fill-detail" id="detailProgressFill"></div>
+            </div>
+        </div>
+        
+        <div class="detail-content">
+            <!-- Problem List Panel -->
+            <div class="problem-list-panel">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold" id="detailProblemCount">Problems (0 / 0)</h3>
+                </div>
+                <div id="detailProblemList" class="space-y-2">
+                    <!-- Problems will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Code Panel -->
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Name of the Problem</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" title="Open in LeetCode" onclick="openInLeetCode()">🌐</button>
+                        <button class="action-btn" title="Copy Problem Link" onclick="copyProblemLink()">🔗</button>
+                        <button class="action-btn" title="Mark as Solved" onclick="markAsSolved()">✓</button>
+                    </div>
+                </div>
+                <div class="notes-panel">
+                    <div class="notes-header">
+                        <span>📝 Notes</span>
+                        <span id="notesStatus" class="notes-status"></span>
+                    </div>
+                    <div
+                        id="notesEditor"
+                        class="notes-editor"
+                        contenteditable="true"
+                        spellcheck="false"
+                        placeholder="Write your notes here…"
+                    ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

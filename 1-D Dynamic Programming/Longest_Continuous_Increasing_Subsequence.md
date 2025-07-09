@@ -1,0 +1,13 @@
+# Longest Continuous Increasing Subsequence
+
+- Concept: 1-D Dynamic Programming
+- LeetCode Link: https://leetcode.com/problems/longest-continuous-increasing-subsequence/
+
+---
+
+## Problem Description
+
+## Solution
+
+## Time/Space Complexity
+
