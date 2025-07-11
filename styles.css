@@ -239,20 +239,6 @@ body {
     gap: 8px;
 }
 
-.action-btn {
-    padding: 10px 12px;
-    background-color: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-    background-color: #e2e8f0;
-    border-color: #cbd5e0;
-}
 
 /* Problem List */
 .problem-list {
@@ -428,7 +414,7 @@ body {
 }
 
 .problem-list-panel {
-    width: 300px;
+    width: 370px;
     padding: 0;
     border-right: 1px solid #e5e7eb;
     background-color: #fafafa;
@@ -438,21 +424,26 @@ body {
 
 /* Header section */
 .problem-list-panel .flex {
-    padding: 20px 24px 12px;
+    padding: 20px 12px 12px 24px;
     border-bottom: 1px solid #f3f4f6;
     background: #ffffff;
     position: sticky;
     top: 0;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .problem-list-panel h3 {
     font-size: 13px;
     font-weight: 600;
     color: #6b7280;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    flex-shrink: 0;
 }
 
 /* Problem list items */
@@ -555,6 +546,7 @@ body {
     align-items: center;
     flex: 1;
     min-width: 0;
+    gap: 12px;
 }
 
 .problem-title-detail {
@@ -632,14 +624,20 @@ body {
 }
 
 .action-btn {
-    padding: 8px 12px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: #ffffff;
     border: 1px solid #e5e7eb;
-    background: white;
     border-radius: 6px;
+    padding: 8px 12px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 14px;
-    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
 }
 
 .action-btn:hover {
@@ -647,6 +645,116 @@ body {
     border-color: #d1d5db;
     color: #374151;
 }
+
+.action-btn.solved {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    transform: scale(1.05);
+}
+
+.action-btn.solved:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+    transform: scale(1.05) translateY(-1px);
+}
+
+.action-btn .btn-text {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+}
+
+.action-btn.solving .btn-text,
+.action-btn.unsolving .btn-text {
+    transform: scale(0.8);
+    opacity: 0;
+}
+
+/* Checkmark animation */
+.action-btn .checkmark {
+    display: none;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn.solved .checkmark {
+    display: inline-block;
+    animation: checkmarkPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.action-btn.unsolving .checkmark {
+    display: inline-block;
+    animation: checkmarkFadeOut 0.3s ease-out forwards;
+}
+
+@keyframes checkmarkPop {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.3) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(360deg);
+        opacity: 1;
+    }
+}
+
+@keyframes checkmarkFadeOut {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+}
+
+/* Ripple effect animation */
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.action-btn.solving::before {
+    width: 300px;
+    height: 300px;
+}
+
+.action-btn.unsolving::before {
+    background: rgba(59, 130, 246, 0.2);
+    width: 300px;
+    height: 300px;
+}
+
+/* Pulse animation for solved state */
+.action-btn.solved {
+    animation: solvedPulse 2s ease-in-out infinite;
+}
+
+@keyframes solvedPulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+    }
+}
+
 
 .notes-panel {
     background-color: #fafafa;
@@ -799,4 +907,106 @@ body {
     .problem-title-detail {
         font-size: 12px;
     }
+}
+
+/* Sort button styling */
+.sort-btn {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sort-btn:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.sort-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Sort dropdown menu */
+.sort-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    min-width: 150px;
+    display: none;
+    margin-top: 4px;
+}
+
+.sort-dropdown.active {
+    display: block;
+}
+
+.sort-option {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.sort-option:last-child {
+    border-bottom: none;
+}
+
+.sort-option:hover {
+    background-color: #f9fafb;
+}
+
+.sort-option.active {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 500;
+}
+
+/* Position the sort button container */
+.sort-container {
+    position: relative;
+}
+
+/* Problem info container */
+.problem-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.popularity-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}
+
+/* Update problem title flex for better layout */
+.problem-title-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 12px;
 }

@@ -24,8 +24,8 @@ function parseCSVLine(line) {
 // Load CSV data and populate the interface
 async function loadCSVData() {
     try {
-        // Load the master CSV
-        const masterResponse = await fetch('leetcode_master.csv');
+        // Load the master CSV with popularity data
+        const masterResponse = await fetch('leetcode_master_with_popularity.csv');
         const masterCsvText = await masterResponse.text();
         const masterLines = masterCsvText.split('\n');
         const header = masterLines[0].split(',');
@@ -35,14 +35,16 @@ async function loadCSVData() {
         for (let i = 1; i < masterLines.length; i++) {
             if (masterLines[i].trim()) {
                 const values = parseCSVLine(masterLines[i]);
-                if (values.length >= 5) {
-                    const [title, concept, difficulty, acceptance, leetcodeLink] = values;
+                if (values.length >= 6) {
+                    const [title, concept, difficulty, acceptance, leetcodeLink, popularity] = values;
                     problems.push({
                         title: title.trim(),
                         concept: concept.trim(),
                         difficulty: difficulty.trim(),
                         acceptance: acceptance.trim(),
-                        leetcodeLink: leetcodeLink.trim()
+                        leetcodeLink: leetcodeLink.trim(),
+                        popularity: popularity.trim(),
+                        solved: false // Add solved attribute, default to false
                     });
                 }
             }
@@ -94,7 +96,7 @@ function updateProblemList(conceptGroups) {
         problemItem.innerHTML = `
             <div class="problem-title">${concept}</div>
             <div class="problem-progress">
-                <span>(0 / ${problemCount})</span>
+                <span>(0/${problemCount})</span>
                 <div class="problem-bar">
                     <div class="problem-bar-fill" style="width: 0%"></div>
                 </div>
@@ -169,11 +171,17 @@ function openProblemDetail(concept, problems) {
     problems.forEach((problem, index) => {
         const problemItem = document.createElement('div');
         problemItem.className = 'problem-item-detail';
-        problemItem.onclick = () => {
+        problemItem.onclick = (event) => {
             selectProblem(problem, index);
+            // Visually update selected state
+            document.querySelectorAll('.problem-item-detail').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
         };
         const difficultyClass = getDifficultyClass(problem.difficulty);
         const difficultyText = problem.difficulty || 'Medium';
+        
         problemItem.innerHTML = `
             <div class="problem-title-flex">
                 <span class="text-white font-medium problem-title-detail">${problem.title}</span>
@@ -184,9 +192,20 @@ function openProblemDetail(concept, problems) {
     });
     // Show detail view
     detailView.classList.add('active');
+
+    // Set default sort to popularity
+    const sortBtn = document.querySelector('.sort-btn');
+    if (sortBtn) {
+        sortBtn.innerHTML = 'Sort by: Popularity ▼';
+    }
+    sortProblems('popularity');
+
     // Automatically select the first problem if available
     if (problems.length > 0) {
         selectProblem(problems[0], 0);
+        // Visually select the first problem in the left panel
+        const firstItem = problemList.querySelector('.problem-item-detail');
+        if (firstItem) firstItem.classList.add('selected');
     }
 }
 
@@ -229,6 +248,21 @@ function selectProblem(problem, index) {
     const codeHeaderTitle = document.querySelector('.code-header h3');
     if (codeHeaderTitle) {
         codeHeaderTitle.textContent = problem.title || problem.Title || 'Notes';
+    }
+
+    // Update the Mark as Solved button to reflect the current problem's solved state
+    const solveBtn = document.getElementById('solveBtn');
+    if (solveBtn) {
+        if (problem.solved) {
+            solveBtn.classList.add('solved');
+            solveBtn.classList.remove('unsolving', 'solving');
+            solveBtn.querySelector('.btn-text').textContent = 'Solved!';
+            solveBtn.setAttribute('title', 'Problem Solved! Click to unmark');
+        } else {
+            solveBtn.classList.remove('solved', 'unsolving', 'solving');
+            solveBtn.querySelector('.btn-text').textContent = 'Mark as Solved';
+            solveBtn.setAttribute('title', 'Mark as Solved');
+        }
     }
 
     // Load the note for the selected problem
@@ -319,39 +353,39 @@ window.openInLeetCode = function() {
     }
 };
 
-window.copyProblemLink = function() {
+function markAsSolved(button) {
+    // Prevent multiple clicks during animation
+    if (button.classList.contains('solving') || button.classList.contains('unsolving')) {
+        return;
+    }
+    
+    // Get the current problem
     const currentProblem = window.currentProblem;
-    if (currentProblem && currentProblem.leetcodeLink) {
-        // Use the actual LeetCode link from CSV
-        navigator.clipboard.writeText(currentProblem.leetcodeLink).then(() => {
-            alert('Problem link copied to clipboard!');
-        });
+    if (!currentProblem) return;
+    
+    // Check current state and toggle
+    if (button.classList.contains('solved')) {
+        // Currently solved, switch back to unsolved
+        button.classList.add('unsolving');
+        button.classList.remove('solved');
+        currentProblem.solved = false; // Set attribute to false
+        setTimeout(() => {
+            button.querySelector('.btn-text').textContent = 'Mark as Solved';
+            button.classList.remove('unsolving');
+            button.setAttribute('title', 'Mark as Solved');
+        }, 300);
     } else {
-        alert('LeetCode link not available for this problem.');
+        // Currently unsolved, switch to solved
+        button.classList.add('solving');
+        setTimeout(() => {
+            button.querySelector('.btn-text').textContent = 'Solved!';
+            button.classList.remove('solving');
+            button.classList.add('solved');
+            button.setAttribute('title', 'Problem Solved! Click to unmark');
+            currentProblem.solved = true; // Set attribute to true
+        }, 300);
     }
-};
-
-window.markAsSolved = function() {
-    const currentProblem = window.currentProblem;
-    if (currentProblem) {
-        // Update progress
-        const progressBar = document.querySelector('.progress-fill');
-        const currentProgress = parseInt(progressBar.style.width) || 0;
-        const newProgress = Math.min(currentProgress + 1, 150);
-        progressBar.style.width = newProgress + '%';
-        
-        // Update progress text
-        document.querySelector('.progress-text').textContent = `${newProgress} / 150`;
-        
-        // Mark problem as solved in UI
-        const problemElement = document.querySelector(`[data-problem="${currentProblem.Title}"]`);
-        if (problemElement) {
-            problemElement.classList.add('solved');
-        }
-        
-        alert('Problem marked as solved!');
-    }
-};
+}
 
 function mergeProblemData(conceptsData, problemsData) {
     const merged = [];
@@ -470,6 +504,81 @@ window.showProblemDetail = function(problem) {
     if (originalShowProblemDetail) originalShowProblemDetail(problem);
     loadNoteForProblem(problem);
 }; 
+
+// Sort functionality
+function toggleSortMenu() {
+    const dropdown = document.getElementById('sortDropdown');
+    dropdown.classList.toggle('active');
+}
+
+function sortProblems(sortType) {
+    const problemList = document.getElementById('detailProblemList');
+    const problems = Array.from(problemList.children);
+    
+    // Close dropdown
+    document.getElementById('sortDropdown').classList.remove('active');
+    
+    // Update sort button text
+    const sortBtn = document.querySelector('.sort-btn');
+    const sortLabels = {
+        'difficulty': 'Difficulty',
+        'popularity': 'Popularity',
+        'acceptance': 'Acceptance Rate',
+        'solved': 'Solved',
+        'unsolved': 'Unsolved'
+    };
+    sortBtn.innerHTML = `Sort by: ${sortLabels[sortType]} ▼`;
+    
+    // Get the current problems data from window.problemData
+    const currentConcept = document.getElementById('detailConceptTitle').textContent;
+    const currentProblems = window.problemData[currentConcept] || [];
+    
+    // Sort problems based on type
+    problems.sort((a, b) => {
+        // Find the corresponding problem data
+        const aTitle = a.querySelector('.problem-title-detail').textContent;
+        const bTitle = b.querySelector('.problem-title-detail').textContent;
+        const aProblem = currentProblems.find(p => p.title === aTitle);
+        const bProblem = currentProblems.find(p => p.title === bTitle);
+        
+        switch(sortType) {
+            case 'difficulty':
+                const difficultyOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
+                const aDiff = aProblem?.difficulty || 'Medium';
+                const bDiff = bProblem?.difficulty || 'Medium';
+                return difficultyOrder[aDiff] - difficultyOrder[bDiff];
+            case 'popularity':
+                const aPop = aProblem?.popularity === 'N/A' ? 0 : parseFloat(aProblem?.popularity || 0);
+                const bPop = bProblem?.popularity === 'N/A' ? 0 : parseFloat(bProblem?.popularity || 0);
+                return bPop - aPop; // Higher popularity first
+            case 'acceptance':
+                const aAcc = parseFloat(aProblem?.acceptance?.replace('%', '') || 0);
+                const bAcc = parseFloat(bProblem?.acceptance?.replace('%', '') || 0);
+                return bAcc - aAcc; // Higher acceptance first
+            case 'solved':
+                // Solved problems first
+                return (bProblem?.solved === true) - (aProblem?.solved === true);
+            case 'unsolved':
+                // Unsolved problems first
+                return (aProblem?.solved === true) - (bProblem?.solved === true);
+            default:
+                return 0;
+        }
+    });
+    
+    // Re-append sorted problems
+    problems.forEach(problem => problemList.appendChild(problem));
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const sortContainer = document.querySelector('.sort-container');
+    const dropdown = document.getElementById('sortDropdown');
+    
+    if (!sortContainer.contains(event.target)) {
+        dropdown.classList.remove('active');
+    }
+}); 
 
 
 

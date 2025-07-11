@@ -298,7 +298,19 @@
             <!-- Problem List Panel -->
             <div class="problem-list-panel">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold" id="detailProblemCount">Problems (0 / 0)</h3>
+                    <h3 class="text-lg font-semibold" id="detailProblemCount">Problems (0/0)</h3>
+                    <div class="sort-container">
+                        <button class="sort-btn" onclick="toggleSortMenu()">
+                            Sort by 
+                        </button>
+                        <div class="sort-dropdown" id="sortDropdown">
+                            <div class="sort-option" onclick="sortProblems('difficulty')">Difficulty</div>
+                            <div class="sort-option" onclick="sortProblems('popularity')">Popularity</div>
+                            <div class="sort-option" onclick="sortProblems('acceptance')">Acceptance Rate</div>
+                            <div class="sort-option" onclick="sortProblems('solved')">Solved</div>
+                            <div class="sort-option" onclick="sortProblems('unsolved')">Unsolved</div>
+                        </div>
+                    </div>
                 </div>
                 <div id="detailProblemList" class="space-y-2">
                     <!-- Problems will be populated here -->
@@ -310,9 +322,10 @@
                 <div class="code-header">
                     <h3>Name of the Problem</h3>
                     <div class="action-buttons">
-                        <button class="action-btn" title="Open in LeetCode" onclick="openInLeetCode()">🌐</button>
-                        <button class="action-btn" title="Copy Problem Link" onclick="copyProblemLink()">🔗</button>
-                        <button class="action-btn" title="Mark as Solved" onclick="markAsSolved()">✓</button>
+                        <button class="action-btn" title="Open in LeetCode" onclick="openInLeetCode()">Open link in new tab</button>
+                        <button class="action-btn" title="Mark as Solved" onclick="markAsSolved(this)" id="solveBtn">
+                    <span class="btn-text">Mark as Solved</span>
+                </button>
                     </div>
                 </div>
                 <div class="notes-panel">
