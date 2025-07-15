@@ -49,14 +49,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Get all problems with progress
+// Get all problems
 app.get('/api/problems', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT p.*, up.solved, up.notes, up.solved_at
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
-      ORDER BY p.concept, p.title
+      SELECT * FROM problems
+      ORDER BY concept, title
     `);
     res.json(result.rows);
   } catch (err) {
@@ -70,11 +68,7 @@ app.get('/api/problems/concept/:concept', async (req, res) => {
   try {
     const { concept } = req.params;
     const result = await pool.query(`
-      SELECT p.*, up.solved, up.notes, up.solved_at
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
-      WHERE p.concept = $1
-      ORDER BY p.title
+      SELECT * FROM problems WHERE concept = $1 ORDER BY title
     `, [concept]);
     res.json(result.rows);
   } catch (err) {
@@ -88,16 +82,11 @@ app.get('/api/problems/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(`
-      SELECT p.*, up.solved, up.notes, up.solved_at
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
-      WHERE p.id = $1
+      SELECT * FROM problems WHERE id = $1
     `, [id]);
-    
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Problem not found' });
     }
-    
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error fetching problem:', err);
@@ -105,30 +94,83 @@ app.get('/api/problems/:id', async (req, res) => {
   }
 });
 
-// Update problem progress (solved status and notes)
+// Update problem progress with spaced repetition initialization
 app.put('/api/problems/:id/progress', async (req, res) => {
   try {
     const { id } = req.params;
-    const { solved, notes } = req.body;
-    
-    // Validate input
+    const { solved, notes, solution } = req.body;
     if (typeof solved !== 'boolean') {
       return res.status(400).json({ error: 'solved must be a boolean' });
     }
-    
-    const result = await pool.query(`
-      INSERT INTO user_progress (problem_id, solved, notes, solved_at)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (problem_id)
-      DO UPDATE SET
-        solved = $2,
-        notes = $3,
-        solved_at = $4,
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *
-    `, [id, solved, notes, solved ? new Date() : null]);
-    
-    res.json(result.rows[0]);
+
+    // If marking as solved, initialize spaced repetition
+    if (solved) {
+      // Get review pattern for this problem's difficulty
+      const patternResult = await pool.query(`
+        SELECT pattern FROM review_patterns WHERE difficulty = (
+          SELECT difficulty FROM problems WHERE id = $1
+        )
+      `, [id]);
+
+      const pattern = patternResult.rows[0]?.pattern || [0, 1, 2, 4, 6, 10];
+      const nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + pattern[0]); // Start with first interval (0 days)
+
+      // Update problem with spaced repetition data
+      const result = await pool.query(`
+        UPDATE problems 
+        SET solved = $1, 
+            notes = $2, 
+            solution = $3,
+            current_interval = 0,
+            next_review_date = $4,
+            in_review_cycle = TRUE,
+            review_count = 0,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $5 
+        RETURNING *
+      `, [solved, notes, solution, nextReviewDate.toISOString().split('T')[0], id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Problem not found' });
+      }
+
+      // Add initial review history entry
+      await pool.query(`
+        INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [id, new Date().toISOString().split('T')[0], 'initial', pattern[0], nextReviewDate.toISOString().split('T')[0]]);
+
+      res.json(result.rows[0]);
+    } else {
+      // If marking as unsolved, remove from review cycle and clear review history
+      const result = await pool.query(`
+        UPDATE problems 
+        SET solved = $1, 
+            notes = $2, 
+            solution = $3,
+            current_interval = 0,
+            next_review_date = NULL,
+            in_review_cycle = FALSE,
+            review_count = 0,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $4 
+        RETURNING *
+      `, [solved, notes, solution, id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Problem not found' });
+      }
+
+      // Delete all review history entries for this problem
+      const deleteResult = await pool.query(`
+        DELETE FROM review_history WHERE problem_id = $1
+      `, [id]);
+      
+      console.log(`Deleted ${deleteResult.rowCount} review history entries for problem ${id}`);
+
+      res.json(result.rows[0]);
+    }
   } catch (err) {
     console.error('Error updating progress:', err);
     res.status(500).json({ error: 'Failed to update progress' });
@@ -141,15 +183,14 @@ app.get('/api/stats', async (req, res) => {
     const result = await pool.query(`
       SELECT 
         COUNT(*) as total_problems,
-        COUNT(CASE WHEN up.solved = true THEN 1 END) as solved_problems,
-        COUNT(CASE WHEN p.difficulty = 'Easy' THEN 1 END) as easy_count,
-        COUNT(CASE WHEN p.difficulty = 'Medium' THEN 1 END) as medium_count,
-        COUNT(CASE WHEN p.difficulty = 'Hard' THEN 1 END) as hard_count,
-        COUNT(CASE WHEN p.difficulty = 'Easy' AND up.solved = true THEN 1 END) as solved_easy,
-        COUNT(CASE WHEN p.difficulty = 'Medium' AND up.solved = true THEN 1 END) as solved_medium,
-        COUNT(CASE WHEN p.difficulty = 'Hard' AND up.solved = true THEN 1 END) as solved_hard
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
+        COUNT(CASE WHEN solved = true THEN 1 END) as solved_problems,
+        COUNT(CASE WHEN difficulty = 'Easy' THEN 1 END) as easy_count,
+        COUNT(CASE WHEN difficulty = 'Medium' THEN 1 END) as medium_count,
+        COUNT(CASE WHEN difficulty = 'Hard' THEN 1 END) as hard_count,
+        COUNT(CASE WHEN difficulty = 'Easy' AND solved = true THEN 1 END) as solved_easy,
+        COUNT(CASE WHEN difficulty = 'Medium' AND solved = true THEN 1 END) as solved_medium,
+        COUNT(CASE WHEN difficulty = 'Hard' AND solved = true THEN 1 END) as solved_hard
+      FROM problems
     `);
     res.json(result.rows[0]);
   } catch (err) {
@@ -163,13 +204,12 @@ app.get('/api/concepts', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT 
-        p.concept,
+        concept,
         COUNT(*) as total_problems,
-        COUNT(CASE WHEN up.solved = true THEN 1 END) as solved_problems
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
-      GROUP BY p.concept
-      ORDER BY p.concept
+        COUNT(CASE WHEN solved = true THEN 1 END) as solved_problems
+      FROM problems
+      GROUP BY concept
+      ORDER BY concept
     `);
     res.json(result.rows);
   } catch (err) {
@@ -187,12 +227,7 @@ app.get('/api/search', async (req, res) => {
     }
     
     const result = await pool.query(`
-      SELECT p.*, up.solved, up.notes, up.solved_at
-      FROM problems p
-      LEFT JOIN user_progress up ON p.id = up.problem_id
-      WHERE p.title ILIKE $1 OR p.concept ILIKE $1
-      ORDER BY p.title
-      LIMIT 50
+      SELECT * FROM problems WHERE title ILIKE $1 OR concept ILIKE $1 ORDER BY title LIMIT 50
     `, [`%${q}%`]);
     
     res.json(result.rows);
@@ -298,6 +333,115 @@ app.post('/api/import-problems', async (req, res) => {
   } catch (err) {
     console.error('Error importing problems:', err);
     res.status(500).json({ error: 'Failed to import problems' });
+  }
+});
+
+// Get all solved problems
+app.get('/api/solved', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT * FROM problems WHERE solved = TRUE ORDER BY concept, title
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching solved problems:', err);
+    res.status(500).json({ error: 'Failed to fetch solved problems' });
+  }
+});
+
+// Get problems due for review today
+app.get('/api/due-today', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const result = await pool.query(`
+      SELECT DISTINCT p.*, 
+             rp.pattern as review_pattern,
+             p.current_interval,
+             p.review_count
+      FROM problems p
+      LEFT JOIN review_patterns rp ON p.difficulty = rp.difficulty
+      WHERE p.solved = TRUE 
+        AND p.in_review_cycle = TRUE
+        AND (p.next_review_date <= $1 OR p.next_review_date IS NULL)
+      ORDER BY p.difficulty, p.title
+    `, [today]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching due today problems:', err);
+    res.status(500).json({ error: 'Failed to fetch due today problems' });
+  }
+});
+
+// Mark problem as reviewed (remembered or forgot)
+app.put('/api/problems/:id/review', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { result } = req.body; // 'remembered' or 'forgot'
+    
+    if (!['remembered', 'forgot'].includes(result)) {
+      return res.status(400).json({ error: 'Result must be "remembered" or "forgot"' });
+    }
+
+    // Get current problem and review pattern
+    const problemResult = await pool.query(`
+      SELECT p.*, rp.pattern as review_pattern
+      FROM problems p
+      LEFT JOIN review_patterns rp ON p.difficulty = rp.difficulty
+      WHERE p.id = $1
+    `, [id]);
+
+    if (problemResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    const problem = problemResult.rows[0];
+    const pattern = problem.review_pattern || [0, 1, 2, 4, 6, 10];
+    const currentInterval = problem.current_interval || 0;
+    const reviewCount = problem.review_count || 0;
+
+    let newInterval, nextReviewDate;
+
+    if (result === 'remembered') {
+      // Move to next interval in pattern
+      const nextIndex = Math.min(currentInterval + 1, pattern.length - 1);
+      newInterval = nextIndex;
+      const daysToAdd = pattern[nextIndex];
+      nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+    } else {
+      // Forgot - move back in pattern
+      const previousIndex = Math.max(currentInterval - 1, 0);
+      newInterval = previousIndex;
+      const daysToAdd = pattern[previousIndex];
+      nextReviewDate = new Date();
+      nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+    }
+
+    // Update problem
+    await pool.query(`
+      UPDATE problems 
+      SET current_interval = $1, 
+          next_review_date = $2, 
+          review_count = $3,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+    `, [newInterval, nextReviewDate.toISOString().split('T')[0], reviewCount + 1, id]);
+
+    // Add to review history
+    await pool.query(`
+      INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [id, new Date().toISOString().split('T')[0], result, pattern[newInterval], nextReviewDate.toISOString().split('T')[0]]);
+
+    // Get updated problem
+    const updatedProblem = await pool.query(`
+      SELECT * FROM problems WHERE id = $1
+    `, [id]);
+
+    res.json(updatedProblem.rows[0]);
+  } catch (err) {
+    console.error('Error updating review:', err);
+    res.status(500).json({ error: 'Failed to update review' });
   }
 });
 

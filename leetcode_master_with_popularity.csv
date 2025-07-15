@@ -1,4 +1,4 @@
-Title,Concept,Difficulty,Acceptance,LeetCode Link,popularity
+Title,Concept,Difficulty,Acceptance,LeetCodeLink,popularity
 Longest Palindromic Substring,Trees,Medium,28.90%,https://leetcode.com/problems/longest-palindromic-substring/,10980098
 Longest Common Prefix,1-D Dynamic Programming,Easy,34.80%,https://leetcode.com/problems/longest-common-prefix/,10191594
 Longest Valid Parentheses,Stack,Hard,27.60%,https://leetcode.com/problems/longest-valid-parentheses/,2535999

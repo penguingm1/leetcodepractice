@@ -20,17 +20,11 @@ const pool = new Pool({
 async function testConnection() {
   try {
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
     client.release();
-    console.log('✅ Database connection successful');
+    console.log('Database connection successful');
     return true;
   } catch (err) {
-    console.error('❌ Database connection failed:', err.message);
-    console.log('\n🔧 Troubleshooting tips:');
-    console.log('1. Make sure PostgreSQL is running');
-    console.log('2. Check your .env file configuration');
-    console.log('3. Verify database name and credentials');
-    console.log('4. Try: psql -U postgres -d leetcode_practice');
+    console.error('Database connection failed:', err.message);
     return false;
   }
 }
@@ -38,38 +32,27 @@ async function testConnection() {
 // Read and execute schema
 async function createSchema() {
   try {
-    console.log('📋 Creating database schema...');
+    console.log('Creating database schema');
     
-    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schemaPath = path.
+join(__dirname, 'schema.sql');
     if (!fs.existsSync(schemaPath)) {
       throw new Error('schema.sql file not found');
     }
     
     const schema = fs.readFileSync(schemaPath, 'utf8');
     
-    // Split schema into individual statements
-    const statements = schema
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
-    
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i];
-      if (statement.trim()) {
-        try {
-          await pool.query(statement);
-          process.stdout.write(`\r📋 Schema progress: ${Math.round(((i + 1) / statements.length) * 100)}%`);
-        } catch (err) {
-          console.error(`\n❌ Error executing statement ${i + 1}:`, err.message);
-          console.error('Statement:', statement.substring(0, 100) + '...');
-        }
-      }
+    // Execute the entire schema as one statement to avoid parsing issues
+    try {
+      await pool.query(schema);
+      console.log(' Database schema created successfully');
+      return true;
+    } catch (err) {
+      console.error('Error executing schema:', err.message);
+      return false;
     }
-    
-    console.log('\n✅ Database schema created successfully');
-    return true;
   } catch (err) {
-    console.error('❌ Error creating schema:', err.message);
+    console.error('Error creating schema:', err.message);
     return false;
   }
 }
@@ -80,12 +63,12 @@ async function importProblems() {
     const csvPath = path.join(__dirname, 'leetcode_master_with_popularity.csv');
     
     if (!fs.existsSync(csvPath)) {
-      console.log('⚠️  CSV file not found. Skipping data import.');
-      console.log('   Expected file: leetcode_master_with_popularity.csv');
+      console.log('CSV file not found. Skipping data import.');
+      console.log('Expected file: leetcode_master_with_popularity.csv');
       return true;
     }
     
-    console.log('📥 Importing problems from CSV...');
+    console.log('Importing problems from CSV...');
     
     // Use csv-parser if available, otherwise use simple parsing
     let problems = [];
@@ -137,26 +120,31 @@ async function importProblems() {
     }
     
     if (problems.length === 0) {
-      console.log('⚠️  No problems found in CSV file');
+      console.log('No problems found in CSV file');
       return true;
     }
     
-    console.log(`📊 Found ${problems.length} problems to import`);
+    console.log(`Found ${problems.length} problems to import`);
     
-    // Clear existing problems
-    await pool.query('DELETE FROM problems');
-    console.log('🗑️  Cleared existing problems');
+    // Check if problems table already has data
+    const existingCount = await pool.query('SELECT COUNT(*) as count FROM problems');
+    const hasExistingData = parseInt(existingCount.rows[0].count) > 0;
     
-    // Insert problems in batches
-    const batchSize = 100;
-    for (let i = 0; i < problems.length; i += batchSize) {
-      const batch = problems.slice(i, i + batchSize);
+    if (hasExistingData) {
+      console.log('📊 Existing problems found. Updating problem data while preserving progress...');
       
-      for (const problem of batch) {
+      // Update existing problems instead of deleting
+      for (const problem of problems) {
         try {
           await pool.query(`
             INSERT INTO problems (title, concept, difficulty, acceptance_rate, popularity, leetcode_link)
             VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (title) DO UPDATE SET
+              concept = EXCLUDED.concept,
+              difficulty = EXCLUDED.difficulty,
+              acceptance_rate = EXCLUDED.acceptance_rate,
+              popularity = EXCLUDED.popularity,
+              leetcode_link = EXCLUDED.leetcode_link
           `, [
             problem.title,
             problem.concept,
@@ -166,19 +154,67 @@ async function importProblems() {
             problem.leetcode_link
           ]);
         } catch (err) {
-          console.error(`❌ Error importing problem "${problem.title}":`, err.message);
+          console.error(`❌ Error updating problem "${problem.title}":`, err.message);
         }
       }
       
-      const progress = Math.min(((i + batchSize) / problems.length) * 100, 100);
-      process.stdout.write(`\r📥 Import progress: ${Math.round(progress)}%`);
+      console.log('✅ Updated existing problems while preserving progress');
+    } else {
+      console.log('📥 No existing problems found. Importing fresh data...');
+      
+      // Clear existing problems only if table is empty
+      await pool.query('DELETE FROM problems');
+      console.log('🗑️  Cleared existing problems');
+      
+      // Insert problems in batches
+      const batchSize = 100;
+      for (let i = 0; i < problems.length; i += batchSize) {
+        const batch = problems.slice(i, i + batchSize);
+        
+        for (const problem of batch) {
+          try {
+            await pool.query(`
+              INSERT INTO problems (title, concept, difficulty, acceptance_rate, popularity, leetcode_link)
+              VALUES ($1, $2, $3, $4, $5, $6)
+            `, [
+              problem.title,
+              problem.concept,
+              problem.difficulty,
+              problem.acceptance_rate,
+              problem.popularity,
+              problem.leetcode_link
+            ]);
+          } catch (err) {
+            console.error(`❌ Error importing problem "${problem.title}":`, err.message);
+          }
+        }
+        
+        const progress = Math.min(((i + batchSize) / problems.length) * 100, 100);
+        process.stdout.write(`\r📥 Import progress: ${Math.round(progress)}%`);
+      }
+      
+      console.log(`\n✅ Successfully imported ${problems.length} problems`);
     }
     
-    console.log(`\n✅ Successfully imported ${problems.length} problems`);
     return true;
     
   } catch (err) {
     console.error('❌ Error importing problems:', err.message);
+    return false;
+  }
+}
+
+// Add solution column if it doesn't exist
+async function addSolutionColumn() {
+  try {
+    await pool.query(`
+      ALTER TABLE problems 
+      ADD COLUMN IF NOT EXISTS solution TEXT
+    `);
+    console.log('✅ Solution column added successfully');
+    return true;
+  } catch (err) {
+    console.error('❌ Error adding solution column:', err.message);
     return false;
   }
 }
@@ -198,6 +234,12 @@ async function setupDatabase() {
     const schemaOk = await createSchema();
     if (!schemaOk) {
       throw new Error('Schema creation failed');
+    }
+    
+    // Add solution column
+    const solutionColumnOk = await addSolutionColumn();
+    if (!solutionColumnOk) {
+      throw new Error('Solution column addition failed');
     }
     
     // Import problems
