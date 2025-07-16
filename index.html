@@ -8,40 +8,47 @@
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
-            <div class="menu-header">
-                Menu
+        <div class="sidebar" id="sidebar">
+            <div class="menu-header" id="menuToggle">
+                <span>Menu</span>
                 <span class="dropdown-arrow">▼</span>
             </div>
             
-            <div class="menu-item">
-                <div class="icon"></div>
-                Practice Problems
-            </div>
-            <div class="menu-item" id="menu-solved">
-                <div class="icon"></div>
-                Solved
-            </div>
-            <div class="menu-item" id="menu-due-today">
-                <div class="icon"></div>
-                Due Today
+            <div class="menu-content" id="menuContent">
+                <div class="menu-item">
+                    <div class="icon"></div>
+                    <span>Practice Problems</span>
+                </div>
+                <div class="menu-item" id="menu-solved">
+                    <div class="icon"></div>
+                    <span>Solved</span>
+                </div>
+                <div class="menu-item" id="menu-due-today">
+                    <div class="icon"></div>
+                    <span>Due Today</span>
+                    <div class="badge">0</div>
+                </div>
+                <div class="menu-item" id="menu-pomodoro">
+                    <div class="icon"></div>
+                    <span>Pomodoro Timer</span>
+                </div>
+                <div class="stats-section">
+                    <div class="stats-title"><span>Stats</span></div>
+                    <div class="stat-item">
+                        <span class="stat-label easy">Easy</span>
+                        <span class="stat-value"></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label medium">Medium</span>
+                        <span class="stat-value"></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label hard">Hard</span>
+                        <span class="stat-value"></span>
+                    </div>
+                </div>
             </div>
             
-            <div class="stats-section">
-                <div class="stats-title">Stats</div>
-                <div class="stat-item">
-                    <span class="stat-label easy">Easy</span>
-                    <span class="stat-value"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label medium">Medium</span>
-                    <span class="stat-value"></span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label hard">Hard</span>
-                    <span class="stat-value"></span>
-                </div>
-            </div>
         </div>
 
         <div class="main-content">
@@ -348,7 +355,6 @@
                         <div id="reviewHistory" class="review-history-content">
                             <div class="review-panel-content">
                                 <div class="review-problem-header">
-                                  <div class="review-difficulty-icon easy">E</div>
                                   <div class="review-problem-info">
                                     <h2>Longest Common Prefix</h2>
                                     <div class="review-problem-meta">Easy • String Processing • Array</div>

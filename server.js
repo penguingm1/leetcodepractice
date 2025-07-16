@@ -103,9 +103,15 @@ app.put('/api/problems/:id/progress', async (req, res) => {
       return res.status(400).json({ error: 'solved must be a boolean' });
     }
 
-    // If marking as solved, initialize spaced repetition
+    // Fetch current solved state
+    const currentResult = await pool.query('SELECT solved FROM problems WHERE id = $1', [id]);
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+    const wasSolved = currentResult.rows[0].solved;
+
     if (solved) {
-      // Get review pattern for this problem's difficulty
+      // If marking as solved, initialize spaced repetition
       const patternResult = await pool.query(`
         SELECT pattern FROM review_patterns WHERE difficulty = (
           SELECT difficulty FROM problems WHERE id = $1
@@ -113,8 +119,13 @@ app.put('/api/problems/:id/progress', async (req, res) => {
       `, [id]);
 
       const pattern = patternResult.rows[0]?.pattern || [0, 1, 2, 4, 6, 10];
-      const nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + pattern[0]); // Start with first interval (0 days)
+      
+      // Set initial review date to today (when problem is marked as solved)
+      const initialReviewDate = new Date();
+      
+      // Calculate next review date - first review should be tomorrow (initial + 1 day)
+      const nextReviewDate = new Date(initialReviewDate);
+      nextReviewDate.setDate(initialReviewDate.getDate() + 1); // First review tomorrow
 
       // Update problem with spaced repetition data
       const result = await pool.query(`
@@ -135,15 +146,15 @@ app.put('/api/problems/:id/progress', async (req, res) => {
         return res.status(404).json({ error: 'Problem not found' });
       }
 
-      // Add initial review history entry
+      // Add initial review history entry with today's date as the fixed initial date
       await pool.query(`
         INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
         VALUES ($1, $2, $3, $4, $5)
-      `, [id, new Date().toISOString().split('T')[0], 'initial', pattern[0], nextReviewDate.toISOString().split('T')[0]]);
+      `, [id, initialReviewDate.toISOString().split('T')[0], 'initial', 1, nextReviewDate.toISOString().split('T')[0]]);
 
       res.json(result.rows[0]);
     } else {
-      // If marking as unsolved, remove from review cycle and clear review history
+      // If marking as unsolved, remove from review cycle
       const result = await pool.query(`
         UPDATE problems 
         SET solved = $1, 
@@ -162,12 +173,13 @@ app.put('/api/problems/:id/progress', async (req, res) => {
         return res.status(404).json({ error: 'Problem not found' });
       }
 
-      // Delete all review history entries for this problem
-      const deleteResult = await pool.query(`
-        DELETE FROM review_history WHERE problem_id = $1
-      `, [id]);
-      
-      console.log(`Deleted ${deleteResult.rowCount} review history entries for problem ${id}`);
+      // Only delete review history if transitioning from solved -> unsolved
+      if (wasSolved === true && solved === false) {
+        const deleteResult = await pool.query(`
+          DELETE FROM review_history WHERE problem_id = $1
+        `, [id]);
+        console.log(`Deleted ${deleteResult.rowCount} review history entries for problem ${id}`);
+      }
 
       res.json(result.rows[0]);
     }
@@ -372,11 +384,86 @@ app.get('/api/due-today', async (req, res) => {
   }
 });
 
+// Get review history for a specific problem
+app.get('/api/problems/:id/review-history', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Get problem details, review stats, and next planned reviews
+    const result = await pool.query(`
+      SELECT 
+        p.title,
+        p.difficulty,
+        p.concept,
+        p.review_count,
+        p.next_review_date,
+        rp.pattern as review_pattern,
+        COUNT(rh.id) as total_review_attempts,
+        LEAST(COUNT(CASE WHEN rh.result = 'remembered' THEN 1 END), p.review_count) as remembered_attempts,
+        COUNT(CASE WHEN rh.result = 'forgot' THEN 1 END) as forgot_attempts,
+        CASE 
+          WHEN p.review_count > 0 THEN 
+            ROUND((LEAST(COUNT(CASE WHEN rh.result = 'remembered' THEN 1 END), p.review_count) * 100.0 / NULLIF(p.review_count, 0)), 2)
+          ELSE 0
+        END as success_rate
+      FROM problems p
+      LEFT JOIN review_history rh ON p.id = rh.problem_id
+      LEFT JOIN review_patterns rp ON p.difficulty = rp.difficulty
+      WHERE p.id = $1
+      GROUP BY p.id, p.title, p.difficulty, p.concept, p.review_count, p.next_review_date, rp.pattern
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    const row = result.rows[0];
+    // Calculate next 3 planned reviews
+    let nextPlannedReviews = [];
+    if (row.next_review_date && row.review_pattern && Array.isArray(row.review_pattern)) {
+      let baseDate = new Date(row.next_review_date);
+      for (let i = 0; i < 3; i++) {
+        // Use the next intervals in the pattern, or repeat the last interval
+        let interval = row.review_pattern[Math.min(i, row.review_pattern.length - 1)];
+        let plannedDate = new Date(baseDate);
+        plannedDate.setDate(baseDate.getDate() + interval);
+        nextPlannedReviews.push(plannedDate.toISOString().split('T')[0]);
+        baseDate = plannedDate;
+      }
+    }
+    row.next_planned_reviews = nextPlannedReviews;
+
+    // Fetch review timeline (last 10 reviews)
+    const timelineResult = await pool.query(`
+      SELECT review_date, result, interval_days, next_review_date, time_spent_minutes, notes
+      FROM review_history
+      WHERE problem_id = $1
+      ORDER BY review_date ASC
+      LIMIT 10
+    `, [id]);
+    // Adjust intervals: first and second review should be 0, then follow the pattern
+    let timeline = timelineResult.rows;
+    if (timeline.length > 0) {
+      for (let i = 0; i < timeline.length; i++) {
+        if (i === 0) {
+          timeline[i].interval_days = 0;
+        } else if (row.review_pattern && Array.isArray(row.review_pattern)) {
+          timeline[i].interval_days = row.review_pattern[Math.min(i, row.review_pattern.length - 1)];
+        }
+      }
+    }
+    row.review_timeline = timeline;
+    res.json(row);
+  } catch (err) {
+    console.error('Error fetching review history:', err);
+    res.status(500).json({ error: 'Failed to fetch review history' });
+  }
+});
+
 // Mark problem as reviewed (remembered or forgot)
 app.put('/api/problems/:id/review', async (req, res) => {
   try {
     const { id } = req.params;
-    const { result } = req.body; // 'remembered' or 'forgot'
+    const { result, time_spent, notes } = req.body; // 'remembered' or 'forgot'
     
     if (!['remembered', 'forgot'].includes(result)) {
       return res.status(400).json({ error: 'Result must be "remembered" or "forgot"' });
@@ -399,6 +486,22 @@ app.put('/api/problems/:id/review', async (req, res) => {
     const currentInterval = problem.current_interval || 0;
     const reviewCount = problem.review_count || 0;
 
+    // Get the initial review date (fixed reference point)
+    const initialReviewResult = await pool.query(`
+      SELECT review_date FROM review_history 
+      WHERE problem_id = $1 AND result = 'initial' 
+      ORDER BY review_date ASC 
+      LIMIT 1
+    `, [id]);
+
+    let initialReviewDate;
+    if (initialReviewResult.rows.length > 0) {
+      initialReviewDate = new Date(initialReviewResult.rows[0].review_date);
+    } else {
+      // Fallback to today if no initial review found
+      initialReviewDate = new Date();
+    }
+
     let newInterval, nextReviewDate;
 
     if (result === 'remembered') {
@@ -406,15 +509,19 @@ app.put('/api/problems/:id/review', async (req, res) => {
       const nextIndex = Math.min(currentInterval + 1, pattern.length - 1);
       newInterval = nextIndex;
       const daysToAdd = pattern[nextIndex];
-      nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+      
+      // Calculate next review date based on the fixed initial date
+      nextReviewDate = new Date(initialReviewDate);
+      nextReviewDate.setDate(initialReviewDate.getDate() + daysToAdd);
     } else {
       // Forgot - move back in pattern
       const previousIndex = Math.max(currentInterval - 1, 0);
       newInterval = previousIndex;
       const daysToAdd = pattern[previousIndex];
-      nextReviewDate = new Date();
-      nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+      
+      // Calculate next review date based on the fixed initial date
+      nextReviewDate = new Date(initialReviewDate);
+      nextReviewDate.setDate(initialReviewDate.getDate() + daysToAdd);
     }
 
     // Update problem
@@ -427,11 +534,11 @@ app.put('/api/problems/:id/review', async (req, res) => {
       WHERE id = $4
     `, [newInterval, nextReviewDate.toISOString().split('T')[0], reviewCount + 1, id]);
 
-    // Add to review history
+    // Add to review history with time_spent and notes
     await pool.query(`
-      INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
-      VALUES ($1, $2, $3, $4, $5)
-    `, [id, new Date().toISOString().split('T')[0], result, pattern[newInterval], nextReviewDate.toISOString().split('T')[0]]);
+      INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date, time_spent_minutes, notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [id, new Date().toISOString().split('T')[0], result, pattern[newInterval], nextReviewDate.toISOString().split('T')[0], time_spent || null, notes || null]);
 
     // Get updated problem
     const updatedProblem = await pool.query(`

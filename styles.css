@@ -96,6 +96,7 @@ body {
     background-color: #cbd5e0;
     border-radius: 3px;
     margin-right: 10px;
+    flex-shrink: 0;
 }
 
 .menu-item.active .icon {
@@ -860,6 +861,7 @@ body {
     font-size: 14px;
     line-height: 1.6;
     min-height: 200px;
+    height: auto;
     max-height: 400px;
     outline: none;
     border: 1px solid #e5e7eb;
@@ -867,6 +869,9 @@ body {
     transition: all 0.2s ease;
     resize: none;
     overflow-y: auto;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-x: hidden;
 }
 
 .notes-editor:focus {
@@ -2185,3 +2190,467 @@ body {
     border-radius: 6px;
     border: 1px solid #e1e4e8;
   }
+
+  .flashcard-extra-inputs {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+.flashcard-extra-inputs label {
+    font-size: 13px;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.flashcard-time-input {
+    text-align: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    position: relative;
+    padding: 14px 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    width: 100px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+.flashcard-comment-input {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: #fafbfc;
+    transition: all 0.3s ease;
+    padding: 10px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    flex: 1;
+}
+.flashcard-time-input:focus,
+.flashcard-comment-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    background: #fff;
+}
+.flashcard-time-label, .flashcard-comment-label{
+    width: 70px
+}
+
+/* Pomodoro Timer Styles */
+.pomodoro-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.pomodoro-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.pomodoro-timer-card {
+    font-family: apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    padding: 32px;
+    margin-bottom: 24px;
+}
+
+.pomodoro-mode-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.pomodoro-mode-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-mode-btn:hover {
+    color: #374151;
+}
+
+.pomodoro-mode-btn.active {
+    background: #ffffff;
+    color: #1f2937;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pomodoro-timer-display {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.pomodoro-time {
+    font-size: 4rem;
+    font-weight: 300;
+    color: #1f2937;
+    margin-bottom: 16px;
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+}
+
+.pomodoro-controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.pomodoro-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+.pomodoro-btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.pomodoro-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.pomodoro-btn-secondary:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.pomodoro-status {
+    text-align: center;
+}
+
+.pomodoro-session-number {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.pomodoro-status-text {
+    color: #374151;
+    font-size: 16px;
+}
+
+.pomodoro-tasks-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    padding: 24px;
+}
+
+.pomodoro-tasks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.pomodoro-tasks-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.pomodoro-tasks-menu {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.pomodoro-tasks-menu:hover {
+    color: #374151;
+}
+
+.pomodoro-task-list {
+    margin-bottom: 24px;
+}
+
+.pomodoro-task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.pomodoro-task-item:hover {
+    background: #f9fafb;
+}
+
+.pomodoro-task-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-task-checkbox:hover {
+    border-color: #9ca3af;
+}
+
+.pomodoro-task-checkbox.completed {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+.pomodoro-task-text {
+    flex: 1;
+    color: #374151;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-task-text.completed {
+    text-decoration: line-through;
+    color: #9ca3af;
+}
+
+.pomodoro-task-delete {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-task-delete:hover {
+    color: #ef4444;
+    background: #fef2f2;
+}
+
+.pomodoro-add-task-form {
+    display: flex;
+    gap: 8px;
+}
+
+.pomodoro-task-input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.pomodoro-task-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.pomodoro-add-task-btn {
+    width: 100%;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 16px;
+    color: #6b7280;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.pomodoro-add-task-btn:hover {
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+/* Responsive design for pomodoro timer */
+@media (max-width: 768px) {
+    .pomodoro-container {
+        padding: 16px;
+    }
+    
+    .pomodoro-title {
+        font-size: 2rem;
+        margin-bottom: 24px;
+    }
+    
+    .pomodoro-timer-card {
+        padding: 24px;
+    }
+    
+    .pomodoro-time {
+        font-size: 3rem;
+    }
+    
+    .pomodoro-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .pomodoro-mode-selector {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .pomodoro-mode-btn {
+        width: 100%;
+    }
+}
+
+.sidebar.collapsed {
+    width: 60px;
+    overflow: hidden;
+}
+.dropdown-arrow {
+    font-size: 12px;
+    color: #6b7280;
+    transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed .dropdown-arrow {
+    transform: rotate(-90deg);
+}
+.menu-content {
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    max-height: 1000px;
+    opacity: 1;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .menu-content {
+    max-height: 0;
+    opacity: 0;
+}
+.sidebar.collapsed .menu-header {
+    justify-content: center;
+}
+
+.sidebar.collapsed .menu-header span:first-child {
+    display: none;
+}
+
+.sidebar.collapsed .menu-item {
+    justify-content: center;
+    padding: 12px;
+}
+
+.sidebar.collapsed .menu-item span:not(.icon) {
+    display: none;
+}
+
+.sidebar.collapsed .icon {
+    margin-right: 0;
+}
+
+.sidebar.collapsed .badge {
+    display: none;
+}
+
+/* Tooltip for collapsed state */
+.sidebar.collapsed .menu-item::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.sidebar.collapsed .menu-item:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+ /* Arrow for tooltip */
+ .sidebar.collapsed .menu-item::before {
+    content: '';
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-right: 4px solid #1f2937;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+}
+
+.sidebar.collapsed .menu-item:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+.sidebar.collapsed .stats-section{
+    display: none;
+}
+
+.main-content {
+    flex: 1;
+    padding: 40px;
+    background-color: #f8f9fa;
+}
+
+.main-content h1 {
+    color: #1f2937;
+    margin-bottom: 20px;
+}
+
+.main-content p {
+    color: #6b7280;
+    line-height: 1.6;
+}

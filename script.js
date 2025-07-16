@@ -92,9 +92,12 @@ function setActiveOnClick(selector) {
     document.querySelectorAll(selector).forEach(el => {
         el.addEventListener('click', function() {
             document.querySelectorAll(selector).forEach(i => i.classList.remove('active'));
-        this.classList.add('active');
+            this.classList.add('active');
+            if (selector === '.menu-item') {
+                showMainProblemList();
+            }
+        });
     });
-});
 }
 setActiveOnClick('.filter-tab');
 setActiveOnClick('.menu-item');
@@ -221,6 +224,9 @@ async function selectProblem(problem, index) {
 
         // Update the notes panel and any other UI elements with the latest data
         loadNoteForProblem(latestProblem);
+        
+        // Load review history for the selected problem
+        await loadReviewHistory(latestProblem.id);
         
         // Only update elements if they exist (for future compatibility)
         const difficultyBadge = document.getElementById('problemDetailDifficultyBadge');
@@ -1011,10 +1017,31 @@ function renderSolvedProblems(problems) {
             <div class="flashcard-content" id="frontContent">
                 ${problems[0].title}
             </div>
+            <div class="flashcard-extra-inputs">
+                <label>
+                    <span class="flashcard-time-label">Time (min):</span>
+                    <input type="number" min="0" class="flashcard-time-input" id="flashcardTimeInput" />
+                </label>
+                <label>
+                    <span class="flashcard-comment-label">Comment:</span>
+                    <textarea class="flashcard-comment-input" id="flashcardCommentInput" placeholder="Your comment..."></textarea>
+                </label>
+            </div>
             <div class="flashcard-flip-hint">
                 <span>Click to reveal details</span>
             </div>
         `;
+        // Prevent flip when interacting with inputs
+        const timeInput = flashcardFront.querySelector('#flashcardTimeInput');
+        const commentInput = flashcardFront.querySelector('#flashcardCommentInput');
+        if (timeInput) {
+            timeInput.addEventListener('click', e => e.stopPropagation());
+            timeInput.addEventListener('focus', e => e.stopPropagation());
+        }
+        if (commentInput) {
+            commentInput.addEventListener('click', e => e.stopPropagation());
+            commentInput.addEventListener('focus', e => e.stopPropagation());
+        }
         
         const flashcardBack = document.createElement('div');
         flashcardBack.className = 'flashcard-back';
@@ -1278,10 +1305,12 @@ function handleFlashcardKeyboard(e) {
 
 // Function to mark problem as remembered
 function markAsRemembered(problemId) {
+    const timeSpent = document.getElementById('flashcardTimeInput')?.value || '';
+    const comment = document.getElementById('flashcardCommentInput')?.value || '';
     fetch(`http://localhost:3001/api/problems/${problemId}/review`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ result: 'remembered' })
+        body: JSON.stringify({ result: 'remembered', time_spent: timeSpent, notes: comment })
     }).then(async res => {
         if (res.ok) {
             // Remove the problem from the current flashcard set
@@ -1307,10 +1336,12 @@ function markAsRemembered(problemId) {
 
 // Function to mark problem as forgot
 function markAsForgot(problemId) {
+    const timeSpent = document.getElementById('flashcardTimeInput')?.value || '';
+    const comment = document.getElementById('flashcardCommentInput')?.value || '';
     fetch(`http://localhost:3001/api/problems/${problemId}/review`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ result: 'forgot' })
+        body: JSON.stringify({ result: 'forgot', time_spent: timeSpent, notes: comment })
     }).then(async res => {
         if (res.ok) {
             // Remove the problem from the current flashcard set
@@ -1421,8 +1452,10 @@ function showMainProblemList() {
     // Check which menu is currently active or if we came from solved menu
     const solvedMenuItem = document.getElementById('menu-solved');
     const dueTodayMenuItem = document.getElementById('menu-due-today');
+    const pomodoroMenuItem = document.getElementById('menu-pomodoro');
     const isSolvedMenuActive = solvedMenuItem && solvedMenuItem.classList.contains('active');
     const isDueTodayMenuActive = dueTodayMenuItem && dueTodayMenuItem.classList.contains('active');
+    const isPomodoroMenuActive = pomodoroMenuItem && pomodoroMenuItem.classList.contains('active');
     const cameFromSolvedMenu = window.cameFromSolvedMenu;
     
     if (isSolvedMenuActive || cameFromSolvedMenu) {
@@ -1454,6 +1487,9 @@ function showMainProblemList() {
                 console.error('Error fetching due today problems:', err);
                 renderDueTodayProblems([]);
             });
+    } else if (isPomodoroMenuActive) {
+        // If pomodoro menu is active, show pomodoro timer
+        renderPomodoroTimer();
     } else {
         // If practice problems menu is active, show concepts list
         mainContent.innerHTML = `
@@ -1616,8 +1652,11 @@ async function selectSolvedProblem(problem, index) {
         // Update the notes panel and any other UI elements with the latest data
         loadSolvedNoteForProblem(latestProblem);
         
+        // Load review history for the selected problem
+        await loadReviewHistory(latestProblem.id);
+        
         // Only update elements if they exist (for future compatibility)
-        const difficultyBadge = document.getElementById('solvedDetailView').querySelector('.code-header h3');
+        const difficultyBadge = document.getElementById('solvedDetailDifficultyBadge');
         if (difficultyBadge) {
             difficultyBadge.textContent = latestProblem.title || latestProblem.Title;
         }
@@ -1721,10 +1760,14 @@ function saveSolvedNoteForProblem(problem) {
     const notes = notesEditor.innerHTML;
     const notesStatus = document.getElementById('solvedNotesStatus');
     
-    fetch(`http://localhost:3001/api/problems/${problem.id}/notes`, {
+    fetch(`http://localhost:3001/api/problems/${problem.id}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: notes })
+        body: JSON.stringify({ 
+            solved: problem.solved,
+            notes: notes,
+            solution: problem.solution || ''
+        })
     }).then(response => {
         if (response.ok) {
             if (notesStatus) notesStatus.textContent = 'Saved';
@@ -1749,10 +1792,14 @@ function saveSolvedSolutionForProblem(problem) {
     const solution = solutionEditor.innerHTML;
     const solutionStatus = document.getElementById('solvedSolutionStatus');
     
-    fetch(`http://localhost:3001/api/problems/${problem.id}/solution`, {
+    fetch(`http://localhost:3001/api/problems/${problem.id}/progress`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ solution: solution })
+        body: JSON.stringify({ 
+            solved: problem.solved,
+            notes: problem.notes || '',
+            solution: solution
+        })
     }).then(response => {
         if (response.ok) {
             if (solutionStatus) solutionStatus.textContent = 'Saved';
@@ -1847,5 +1894,359 @@ function initializeSolvedTabs() {
     });
 } 
 
+// Fetch and render review history for a problem
+async function loadReviewHistory(problemId) {
+    try {
+        const response = await fetch(`http://localhost:3001/api/problems/${problemId}/review-history`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch review history');
+        }
+        const data = await response.json();
+        renderReviewHistory(data);
+    } catch (err) {
+        console.error('Error loading review history:', err);
+    }
+}
 
+// Render review history in the history tab
+function renderReviewHistory(data) {
+    const reviewHistorySection = document.getElementById('reviewHistory');
+    if (!reviewHistorySection) return;
 
+    // Update the stats grid
+    const statsGrid = reviewHistorySection.querySelector('.review-stats-grid');
+    if (statsGrid) {
+        statsGrid.innerHTML = `
+            <div class="review-stat-card">
+                <div class="review-stat-number">${data.review_count || 0}</div>
+                <div class="review-stat-label">Total Attempts</div>
+            </div>
+            <div class="review-stat-card">
+                <div class="review-stat-number">${data.remembered_attempts || 0}</div>
+                <div class="review-stat-label">Remembered</div>
+            </div>
+            <div class="review-stat-card">
+                <div class="review-stat-number">${data.forgot_attempts || 0}</div>
+                <div class="review-stat-label">Forgot</div>
+            </div>
+            <div class="review-stat-card">
+                <div class="review-stat-number review-success-rate ${data.success_rate >= 70 ? 'success' : data.success_rate >= 50 ? 'warning' : 'danger'}">${data.success_rate || 0}%</div>
+                <div class="review-stat-label">Success Rate</div>
+            </div>
+        `;
+    }
+
+    // Update the problem header
+    const problemHeader = reviewHistorySection.querySelector('.review-problem-header');
+    if (problemHeader) {
+        const problemInfo = problemHeader.querySelector('.review-problem-info');
+        if (problemInfo) {
+            const title = problemInfo.querySelector('h2');
+            const meta = problemInfo.querySelector('.review-problem-meta');
+            if (title) title.textContent = data.title || 'Unknown Problem';
+            if (meta) meta.textContent = `${data.difficulty || 'Medium'} • ${data.concept || 'Unknown Concept'}`;
+        }
+    }
+
+    // Update the planned reviews section
+    const plannedSection = reviewHistorySection.querySelector('.review-planned-list');
+    if (plannedSection && Array.isArray(data.next_planned_reviews)) {
+        plannedSection.innerHTML = data.next_planned_reviews.length
+            ? data.next_planned_reviews.map(date =>
+                `<div class="review-planned-item">${date}</div>`
+              ).join('')
+            : '<div class="review-planned-item">No planned reviews</div>';
+    }
+
+    // Helper to format date as 'Month Day, Year'
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // Update the review timeline section
+    const timelineSection = reviewHistorySection.querySelector('.review-timeline');
+    if (timelineSection && Array.isArray(data.review_timeline)) {
+        timelineSection.innerHTML = `
+            <h3 class="review-section-title">📈 Review Timeline</h3>
+            ${data.review_timeline.length
+                ? data.review_timeline.map(entry => `
+                    <div class="review-timeline-entry">
+                        <div class="review-timeline-dot ${entry.result}"></div>
+                        <div class="review-timeline-content ${entry.result}">
+                            <div class="review-timeline-header">
+                                <div class="review-timeline-date">${formatDate(entry.review_date)}</div>
+                                <div class="review-timeline-result ${entry.result}">${entry.result.charAt(0).toUpperCase() + entry.result.slice(1)}</div>
+                            </div>
+                            <div class="review-timeline-details">
+                                <span>Interval: ${entry.interval_days ?? ''} days</span>
+                                <span>•</span>
+                                <span>Time: ${entry.time_spent_minutes ? entry.time_spent_minutes + ' min' : 'N/A'}</span>
+                                <span>•</span>
+                                <span>Next review: ${formatDate(entry.next_review_date)}</span>
+                            </div>
+                            <div class="review-timeline-notes">
+                                ${entry.notes ? entry.notes : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')
+                : '<div class="review-timeline-entry"><div class="review-timeline-content">No review history yet.</div></div>'
+            }
+        `;
+    }
+}
+
+// Pomodoro Timer functionality
+let pomodoroState = {
+    timeLeft: 55 * 60, // 25 minutes in seconds
+    isActive: false,
+    mode: 'pomodoro', // 'pomodoro', 'shortBreak', 'longBreak'
+    tasks: [],
+    newTask: '',
+    showAddTask: false,
+    interval: null
+};
+
+const pomodoroModes = {
+    pomodoro: { time: 25 * 60, label: 'Pomodoro' },
+    shortBreak: { time: 5 * 60, label: 'Short Break' },
+    longBreak: { time: 15 * 60, label: 'Long Break' }
+};
+
+function renderPomodoroTimer() {
+    const mainContent = document.querySelector('.main-content');
+    let root = document.getElementById('pomodoro-timer-root');
+    if (!root) {
+        mainContent.innerHTML = `<div id="pomodoro-timer-root"></div>`;
+        root = document.getElementById('pomodoro-timer-root');
+    }
+    // If the timer structure is not present, create it
+    if (!document.getElementById('pomodoro-timer-box')) {
+        root.innerHTML = `
+            <div class="pomodoro-container" id="pomodoro-timer-box">
+                <h1 class="pomodoro-title">Focus Timer</h1>
+                <div class="pomodoro-timer-card">
+                    <div class="pomodoro-mode-selector" id="pomodoro-mode-selector"></div>
+                    <div class="pomodoro-timer-display">
+                        <div class="pomodoro-time" id="pomodoro-timer-text"></div>
+                        <div class="pomodoro-controls">
+                            <button class="pomodoro-btn pomodoro-btn-primary" id="pomodoro-start-btn"></button>
+                            <button class="pomodoro-btn pomodoro-btn-secondary" id="pomodoro-reset-btn">🔄 Reset</button>
+                        </div>
+                    </div>
+                    <div class="pomodoro-status">
+                        <div class="pomodoro-session-number">#1</div>
+                        <div class="pomodoro-status-text" id="pomodoro-status-text"></div>
+                    </div>
+                </div>
+                <div class="pomodoro-tasks-card">
+                    <div class="pomodoro-tasks-header">
+                        <h2 class="pomodoro-tasks-title">Tasks</h2>
+                        <button class="pomodoro-tasks-menu">⋮</button>
+                    </div>
+                    <div class="pomodoro-task-list" id="pomodoro-task-list"></div>
+                    <div id="pomodoro-add-task-section"></div>
+                </div>
+            </div>
+        `;
+    }
+    // Render static parts
+    renderPomodoroModes();
+    renderPomodoroTimerText();
+    renderPomodoroStatusText();
+    renderPomodoroButtons();
+    renderPomodoroTasks();
+}
+
+function renderPomodoroModes() {
+    const modeSelector = document.getElementById('pomodoro-mode-selector');
+    if (!modeSelector) return;
+    modeSelector.innerHTML = Object.entries(pomodoroModes).map(([key, { label }]) =>
+        `<button class="pomodoro-mode-btn ${pomodoroState.mode === key ? 'active' : ''}" onclick="handlePomodoroModeChange('${key}')">${label}</button>`
+    ).join('');
+}
+
+function renderPomodoroTimerText() {
+    const timerText = document.getElementById('pomodoro-timer-text');
+    if (timerText) timerText.textContent = formatPomodoroTime(pomodoroState.timeLeft);
+}
+
+function renderPomodoroStatusText() {
+    const statusText = document.getElementById('pomodoro-status-text');
+    if (statusText) statusText.textContent = pomodoroState.isActive ? 'Focus time! Stay concentrated.' : 'Ready to start your focus session?';
+}
+
+function renderPomodoroButtons() {
+    const startBtn = document.getElementById('pomodoro-start-btn');
+    if (startBtn) {
+        startBtn.textContent = pomodoroState.isActive ? '⏸️ Pause' : '▶️ Start';
+        startBtn.onclick = togglePomodoroTimer;
+    }
+    const resetBtn = document.getElementById('pomodoro-reset-btn');
+    if (resetBtn) {
+        resetBtn.onclick = resetPomodoroTimer;
+    }
+}
+
+function renderPomodoroTasks() {
+    const taskList = document.getElementById('pomodoro-task-list');
+    const addTaskSection = document.getElementById('pomodoro-add-task-section');
+    if (!taskList || !addTaskSection) return;
+    taskList.innerHTML = pomodoroState.tasks.map((task) =>
+        `<div class="pomodoro-task-item">
+            <button class="pomodoro-task-checkbox ${task.completed ? 'completed' : ''}" onclick="togglePomodoroTask(${task.id})">${task.completed ? '✓' : ''}</button>
+            <span class="pomodoro-task-text ${task.completed ? 'completed' : ''}">${task.text}</span>
+            <button class="pomodoro-task-delete" onclick="deletePomodoroTask(${task.id})">Delete</button>
+        </div>`
+    ).join('');
+    if (pomodoroState.showAddTask) {
+        addTaskSection.innerHTML = `
+            <div class="pomodoro-add-task-form">
+                <input type="text" class="pomodoro-task-input" value="${pomodoroState.newTask}" onkeypress="handlePomodoroTaskKeyPress(event)" oninput="updatePomodoroNewTask(this.value)" placeholder="Enter task..." autofocus>
+                <button class="pomodoro-btn pomodoro-btn-primary" onclick="addPomodoroTask()">Add</button>
+                <button class="pomodoro-btn pomodoro-btn-secondary" onclick="cancelAddPomodoroTask()">Cancel</button>
+            </div>
+        `;
+    } else {
+        addTaskSection.innerHTML = `<button class="pomodoro-add-task-btn" onclick="showAddPomodoroTask()">➕ Add Task</button>`;
+    }
+}
+
+// Update only timer text and button states on interval
+function updatePomodoroTimerUI() {
+    renderPomodoroTimerText();
+    renderPomodoroStatusText();
+    renderPomodoroButtons();
+}
+
+// Update timer logic
+function togglePomodoroTimer() {
+    pomodoroState.isActive = !pomodoroState.isActive;
+    if (pomodoroState.isActive) {
+        pomodoroState.interval = setInterval(() => {
+            pomodoroState.timeLeft--;
+            if (pomodoroState.timeLeft <= 0) {
+                pomodoroState.isActive = false;
+                clearInterval(pomodoroState.interval);
+                pomodoroState.interval = null;
+                if (Notification.permission === 'granted') {
+                    new Notification('Pomodoro Timer', {
+                        body: 'Time is up! Take a break.',
+                        icon: '/favicon.ico'
+                    });
+                } else {
+                    alert('Time is up! Take a break.');
+                }
+            }
+            updatePomodoroTimerUI();
+        }, 1000);
+    } else {
+        if (pomodoroState.interval) {
+            clearInterval(pomodoroState.interval);
+            pomodoroState.interval = null;
+        }
+    }
+    updatePomodoroTimerUI();
+}
+
+function resetPomodoroTimer() {
+    pomodoroState.isActive = false;
+    pomodoroState.timeLeft = pomodoroModes[pomodoroState.mode].time;
+    if (pomodoroState.interval) {
+        clearInterval(pomodoroState.interval);
+        pomodoroState.interval = null;
+    }
+    updatePomodoroTimerUI();
+}
+
+function handlePomodoroModeChange(newMode) {
+    pomodoroState.mode = newMode;
+    pomodoroState.timeLeft = pomodoroModes[newMode].time;
+    pomodoroState.isActive = false;
+    if (pomodoroState.interval) {
+        clearInterval(pomodoroState.interval);
+        pomodoroState.interval = null;
+    }
+    renderPomodoroTimer();
+}
+
+function formatPomodoroTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function showAddPomodoroTask() {
+    pomodoroState.showAddTask = true;
+    pomodoroState.newTask = '';
+    renderPomodoroTimer();
+}
+
+function cancelAddPomodoroTask() {
+    pomodoroState.showAddTask = false;
+    pomodoroState.newTask = '';
+    renderPomodoroTimer();
+}
+
+function updatePomodoroNewTask(value) {
+    pomodoroState.newTask = value;
+}
+
+function handlePomodoroTaskKeyPress(event) {
+    if (event.key === 'Enter') {
+        addPomodoroTask();
+    }
+}
+
+function addPomodoroTask() {
+    if (pomodoroState.newTask.trim()) {
+        pomodoroState.tasks.push({
+            id: Date.now(),
+            text: pomodoroState.newTask.trim(),
+            completed: false
+        });
+        pomodoroState.newTask = '';
+        pomodoroState.showAddTask = false;
+        renderPomodoroTimer();
+    }
+}
+
+function togglePomodoroTask(id) {
+    pomodoroState.tasks = pomodoroState.tasks.map(task => 
+        task.id === id ? { ...task, completed: !task.completed } : task
+    );
+    renderPomodoroTimer();
+}
+
+function deletePomodoroTask(id) {
+    pomodoroState.tasks = pomodoroState.tasks.filter(task => task.id !== id);
+    renderPomodoroTimer();
+}
+const sidebar = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menuToggle');
+const menuContent = document.getElementById('menuContent');
+
+let isCollapsed = false;
+
+menuToggle.addEventListener('click', function() {
+    isCollapsed = !isCollapsed;
+    
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+    } else {
+        sidebar.classList.remove('collapsed');
+    }
+});
+
+// Add click handlers for menu items
+const menuItems = document.querySelectorAll('.menu-item');
+menuItems.forEach(item => {
+    item.addEventListener('click', function() {
+        // Remove active class from all items
+        menuItems.forEach(mi => mi.classList.remove('active'));
+        // Add active class to clicked item
+        this.classList.add('active');
+    });
+});
