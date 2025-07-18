@@ -231,3 +231,5 @@ BEGIN
     ORDER BY p.next_review_date ASC, p.difficulty DESC;
 END;
 $$ LANGUAGE plpgsql; 
+
+ALTER TABLE problems ADD COLUMN IF NOT EXISTS first_solved_date DATE; 

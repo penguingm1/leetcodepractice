@@ -869,9 +869,7 @@ body {
     transition: all 0.2s ease;
     resize: none;
     overflow-y: auto;
-    word-wrap: break-word;
-    white-space: pre-wrap;
-    overflow-x: hidden;
+    word-break: break-word;
 }
 
 .notes-editor:focus {

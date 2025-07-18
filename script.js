@@ -347,6 +347,12 @@ async function markAsSolved(button) {
     const currentProblem = window.currentProblem;
     if (!currentProblem) return;
     
+    // Get local date string (YYYY-MM-DD)
+    const todayLocal = new Date();
+    const localDateStr = todayLocal.getFullYear() + '-' +
+      String(todayLocal.getMonth() + 1).padStart(2, '0') + '-' +
+      String(todayLocal.getDate()).padStart(2, '0');
+    
     try {
         if (button.classList.contains('solved')) {
             button.classList.add('unsolving');
@@ -385,7 +391,8 @@ async function markAsSolved(button) {
                         body: JSON.stringify({
                             solved: true,
                             notes: currentProblem.notes || '',
-                            solution: currentProblem.solution || ''
+                            solution: currentProblem.solution || '',
+                            solved_date: localDateStr // <-- send local date
                         })
                     });
                     if (!response.ok) {
