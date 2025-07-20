@@ -1,0 +1,165 @@
+Concept,Title
+Misc,Sequential Digits
+Misc,Weather Type in Each Country
+Misc,Find Numbers with Even Number of Digits
+Misc,Replace Elements with Greatest Element on Right Side
+Misc,Find the Team Size
+Misc,Verbal Arithmetic Puzzle
+Misc,Running Total for Different Genders
+Misc,Get Watched Videos by Your Friends
+Misc,Minimum Insertion Steps to Make a String Palindrome
+Misc,Decompress Run-Length Encoded List
+Misc,Minimum Flips to Make a OR b Equal to c
+Misc,Restaurant Growth
+Misc,Ads Performance
+Misc,Print Words Vertically
+Misc,Delete Leaves With a Given Value
+Misc,Minimum Number of Taps to Open to Water a Garden
+Misc,List the Products Ordered in a Period
+Misc,Break a Palindrome
+Misc,Remove Palindromic Subsequences
+Misc,"Filter Restaurants by Vegan-Friendly, Price and Distance"
+Misc,Find the City With the Smallest Number of Neighbors at a Threshold Distance
+Misc,Minimum Difficulty of a Job Schedule
+Misc,Number of Transactions per Visit
+Misc,Movie Rating
+Misc,Number of Steps to Reduce a Number to Zero
+Misc,Angle Between Hands of a Clock
+Misc,Check If N and Its Double Exist
+Misc,Tweet Counts Per Frequency
+Misc,Students With Invalid Departments
+Misc,Product of the Last K Numbers
+Misc,Activity Participants
+Misc,Apply Discount Every n Orders
+Misc,Count All Valid Pickup and Delivery Options
+Misc,Closest Divisors
+Misc,Largest Multiple of Three
+Misc,Number of Trusted Contacts of a Customer
+Misc,How Many Numbers Are Smaller Than the Current Number
+Misc,Rank Teams by Votes
+Misc,Get the Second Most Recent Activity
+Misc,Increasing Decreasing String
+Misc,Bulb Switcher III
+Misc,Time Needed to Inform All Employees
+Misc,Frog Position After T Seconds
+Misc,Replace Employee ID With The Unique Identifier
+Misc,Total Sales Amount by Year
+Misc,Cinema Seat Allocation
+Misc,Pizza With 3n Slices
+Misc,Four Divisors
+Misc,Capital Gain/Loss
+Misc,Count Number of Teams
+Misc,Design Underground System
+Misc,Find All Good Strings
+Misc,Customers Who Bought Products A and B but Not CNew
+Misc,Count Largest Group
+Misc,Construct K Palindrome Strings
+Misc,Circle and Rectangle Overlapping
+Misc,Reducing Dishes
+Misc,Minimum Subsequence in Non-Increasing Order
+Misc,Stone Game III
+Misc,Top TravellersNew
+Misc,Palindrome Number
+Misc,Container With Most Water
+Misc,Remove Element
+Misc,Unique Paths
+Misc,Climbing Stairs
+Misc,Best Time to Buy and Sell Stock
+Misc,Best Time to Buy and Sell Stock II
+Misc,Best Time to Buy and Sell Stock III
+Misc,Valid Palindrome
+Misc,LRU Cache
+Misc,Insertion Sort List
+Misc,Sort List
+Misc,Second Highest Salary
+Misc,Employees Earning More Than Their Managers
+Misc,Customers Who Never Order
+Misc,Department Highest Salary
+Misc,Best Time to Buy and Sell Stock IV
+Misc,House Robber
+Misc,Happy Number
+Misc,House Robber II
+Misc,Missing Number
+Misc,Move Zeroes
+Misc,Best Time to Buy and Sell Stock with Cooldown
+Misc,Power of Three
+Misc,House Robber III
+Misc,Top K Frequent Elements
+Misc,Design Twitter
+Misc,Sort Characters By Frequency
+Misc,Assign Cookies
+Misc,Fibonacci Number
+Misc,Friend Circles
+Misc,Classes More Than 5 Students
+Misc,Not Boring Movies
+Misc,Design Circular Queue
+Misc,Design Circular Deque
+Misc,Valid Palindrome II
+Misc,Redundant Connection
+Misc,Top K Frequent Words
+Misc,Kth Largest Element in a Stream
+Misc,Design HashSet
+Misc,Design HashMap
+Misc,Best Time to Buy and Sell Stock with Transaction Fee
+Misc,Accounts Merge
+Misc,Find Pivot Index
+Misc,Partition Labels
+Misc,Jewels and Stones
+Misc,All Paths From Source to Target
+Misc,Champagne Tower
+Misc,Most Profit Assigning Work
+Misc,Rectangle Overlap
+Misc,Keys and Rooms
+Misc,Lemonade Change
+Misc,Boats to Save People
+Misc,Fair Candy Swap
+Misc,Find the Town Judge
+Misc,Last Stone Weight
+Misc,Statistics from a Large Sample
+Misc,Distribute Candies to People
+Misc,Print in Order
+Misc,N-th Tribonacci Number
+Misc,Reformat Department Table
+Misc,Distance Between Bus Stops
+Misc,Minimum Absolute Difference
+Misc,Smallest String With Swaps
+Misc,The Dining Philosophers
+Misc,Count Servers that Communicate
+Misc,Largest Rectangle in Histogram
+Misc,Valid Parenthesis String
+Sliding Window,Longest Palindromic Substring
+Sliding Window,Substring with Concatenation of All Words
+Sliding Window,Minimum Window Substring
+Sliding Window,Longest Substring with At Most Two Distinct Characters
+Sliding Window,Sliding Window Maximum
+Sliding Window,Longest Substring with At Most K Distinct Characters
+Sliding Window,Longest Substring with At Least K Repeating Characters
+Sliding Window,Repeated Substring Pattern
+Sliding Window,Unique Substrings in Wraparound String
+Sliding Window,Sliding Window Median
+Sliding Window,Palindromic Substrings
+Sliding Window,Count Binary Substrings
+Sliding Window,Minimum Window Subsequence
+Sliding Window,Count Unique Characters of All Substrings of a Given String
+Sliding Window,Binary String With Substrings Representing 1 To N
+Sliding Window,Longest Duplicate Substring
+Sliding Window,Longest Repeating Substring
+Sliding Window,Find K-Length Substrings With No Repeated Characters
+Sliding Window,Swap For Longest Repeated Character Substring
+Sliding Window,Last Substring in Lexicographical Order
+Sliding Window,Can Make Palindrome from Substring
+Sliding Window,Count Substrings with Only One Distinct Letter
+Sliding Window,Reverse Substrings Between Each Pair of Parentheses
+Sliding Window,Get Equal Substrings Within Budget
+Sliding Window,Replace the Substring for Balanced String
+Sliding Window,Maximum Number of Occurrences of a Substring
+Sliding Window,Distinct Echo Substrings
+Sliding Window,Number of Substrings Containing All Three Characters
+Sliding Window,Find the Longest Substring Containing Vowels in Even Counts
+Sliding Window,Longest Substring Without Repeating Characters
+Stack,Valid Parentheses
+Stack,Generate Parentheses
+Stack,Longest Valid Parentheses
+Stack,Min Stack
+Stack,Remove Invalid Parentheses
+Stack,Max Stack

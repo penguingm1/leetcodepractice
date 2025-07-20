@@ -1,0 +1,63 @@
+/* Notion-style editor and syntax highlighting styles */
+
+.language-python .token.keyword {
+  color: #0077AA !important;
+}
+.language-python .token.function {
+  color: #669900 !important;
+}
+.language-python .token.builtin {
+  color: #669900 !important;
+}
+.language-python .token.function-name {
+  color: #DD4A68 !important;
+}
+.language-python .token.class-name {
+  color: #DD4A68 !important;
+}
+.language-python .token.string {
+  color: #cc6600 !important;
+}
+.language-python .token.number {
+  color: #cc6600 !important;
+}
+.language-python .token.boolean {
+  color: #990055 !important;
+}
+.language-python .token.operator {
+  color: #32302C !important;
+}
+.language-python .token.punctuation {
+  color: #32302C !important;
+}
+.language-python .token.comment {
+  color: #666666 !important;
+}
+.language-python {
+  color: #32302C !important;
+}
+.react-simple-code-editor {
+  color: #32302C !important;
+}
+.react-simple-code-editor:focus,
+.react-simple-code-editor:focus-within,
+.react-simple-code-editor textarea:focus,
+.react-simple-code-editor textarea:focus-within,
+.react-simple-code-editor pre:focus,
+.react-simple-code-editor pre:focus-within,
+.react-simple-code-editor *:focus,
+.react-simple-code-editor *:focus-within {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+  outline-color: transparent !important;
+}
+
+.notes-editor textarea:focus,
+.notes-editor textarea:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}

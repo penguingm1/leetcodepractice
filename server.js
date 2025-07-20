@@ -111,48 +111,87 @@ app.put('/api/problems/:id/progress', async (req, res) => {
     const wasSolved = currentResult.rows[0].solved;
     const firstSolvedDate = currentResult.rows[0].first_solved_date;
 
-    let initialReviewDate = firstSolvedDate ? new Date(firstSolvedDate) : (solved_date ? new Date(solved_date) : new Date());
-    let initialReviewDateStr = initialReviewDate.toISOString().split('T')[0];
+    if (solved) {
+      // Marking as solved
+      // Use today's date in local timezone for initial review
+      let initialReviewDate = firstSolvedDate ? new Date(firstSolvedDate) : (solved_date ? new Date(solved_date) : new Date());
+      let initialReviewDateStr = initialReviewDate.toISOString().split('T')[0];
 
-    if (!firstSolvedDate) {
+      // If this is the first time solving, ensure we use today's date
+      if (!firstSolvedDate) {
+        // Get today's date in local timezone to avoid timezone issues
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        initialReviewDateStr = todayStr;
+        await pool.query(`
+          UPDATE problems SET first_solved_date = $1 WHERE id = $2
+        `, [todayStr, id]);
+      }
+      // Calculate next review date - first review should be today
+      const nextReviewDate = new Date(initialReviewDateStr);
+
+      // Update problem with spaced repetition data
+      const result = await pool.query(`
+        UPDATE problems 
+        SET solved = $1, 
+            notes = $2, 
+            solution = $3,
+            current_interval = 0,
+            next_review_date = $4,
+            in_review_cycle = TRUE,
+            review_count = 0,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $5 
+        RETURNING *
+      `, [solved, notes, solution, nextReviewDate.toISOString().split('T')[0], id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Problem not found' });
+      }
+
+      // Add initial review history entry with first_solved_date as the fixed initial date
+      // Only add if not already present
+      const initialHistory = await pool.query(`
+        SELECT 1 FROM review_history WHERE problem_id = $1 AND result = 'initial'`, [id]);
+      if (initialHistory.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [id, initialReviewDateStr, 'initial', 1, nextReviewDate.toISOString().split('T')[0]]);
+      }
+
+      res.json(result.rows[0]);
+    } else {
+      // Marking as unsolved - clear all review data
+      const result = await pool.query(`
+        UPDATE problems 
+        SET solved = $1, 
+            notes = $2, 
+            solution = $3,
+            first_solved_date = NULL,
+            current_interval = 0,
+            next_review_date = NULL,
+            in_review_cycle = FALSE,
+            review_count = 0,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = $4 
+        RETURNING *
+      `, [solved, notes, solution, id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Problem not found' });
+      }
+
+      // Clear all review history for this problem
       await pool.query(`
-        UPDATE problems SET first_solved_date = $1 WHERE id = $2
-      `, [initialReviewDateStr, id]);
+        DELETE FROM review_history WHERE problem_id = $1
+      `, [id]);
+
+      res.json(result.rows[0]);
     }
-    // Calculate next review date - first review should be today
-    const nextReviewDate = new Date(initialReviewDateStr);
-
-    // Update problem with spaced repetition data
-    const result = await pool.query(`
-      UPDATE problems 
-      SET solved = $1, 
-          notes = $2, 
-          solution = $3,
-          current_interval = 0,
-          next_review_date = $4,
-          in_review_cycle = TRUE,
-          review_count = 0,
-          updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $5 
-      RETURNING *
-    `, [solved, notes, solution, nextReviewDate.toISOString().split('T')[0], id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Problem not found' });
-    }
-
-    // Add initial review history entry with first_solved_date as the fixed initial date
-    // Only add if not already present
-    const initialHistory = await pool.query(`
-      SELECT 1 FROM review_history WHERE problem_id = $1 AND result = 'initial'`, [id]);
-    if (initialHistory.rows.length === 0) {
-      await pool.query(`
-        INSERT INTO review_history (problem_id, review_date, result, interval_days, next_review_date)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [id, initialReviewDateStr, 'initial', 1, nextReviewDate.toISOString().split('T')[0]]);
-    }
-
-    res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating progress:', err);
     res.status(500).json({ error: 'Failed to update progress' });
@@ -346,6 +385,11 @@ app.get('/api/due-today', async (req, res) => {
       WHERE p.solved = TRUE 
         AND p.in_review_cycle = TRUE
         AND (p.next_review_date <= $1 OR p.next_review_date IS NULL)
+        AND NOT EXISTS (
+          SELECT 1 FROM review_history rh 
+          WHERE rh.problem_id = p.id 
+          AND rh.review_date = $1
+        )
       ORDER BY p.difficulty, p.title
     `, [todayUTC]);
     res.json(result.rows);

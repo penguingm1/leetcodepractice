@@ -12,6 +12,8 @@
     "health": "curl http://localhost:3001/api/health"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.3.1",
